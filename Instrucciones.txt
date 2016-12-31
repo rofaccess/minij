@@ -1,0 +1,37 @@
+Proyecto Compiladores - Parte 3
+Alumno: Rodrigo Fernandez
+
+Instrucciones:
+	
+	- Ejecutar el programa TestSymbolTable.java, este hace los puntos:
+		3. Variables duplicadas: No carga en la tabla si ya existe variables, metodos o clases y 
+		                         muestra mensaje.
+		4. Asignacion de variables de tipo incorrecto: Es rudimentario, muestra mensajes
+
+    Use una tabla de simbolos plana para hacer esto
+
+
+
+    - Ejecutar el programa TestSymbolTree.java, este hace los puntos:
+		3. Variables duplicadas: No carga en la tabla si ya existe variables, metodos ,clases y parametros 
+		                         de metodo muestra mensajes mas detallados que la opcion anterior.
+		7. Chequeo de metodos existentes: Muestra mensajes detallados, verifica si la clase existe y si el
+										  metodo llamado existe para la clase. No revisa clases padre
+
+    Use un arbol de simbolos para hacer esto. Escribi los mensajes en ingles porque era mas conciso. 
+
+Notas: 
+	- En los test Se compila un archivo MyExample.java que cuenta con errores semanticos a proposito para 
+	  mosstrar los correspondientes mensajes de error.    
+	
+	- Utilizo el jar apache-commons-lang.jar que esta en la carpeta lib. Lo uso para generar claves hash
+	  Es posible que se necesite agregarlo al buil path
+	
+	- En la carpeta SamplePrograms hay otros archivos de ejemplo que se pueden usar y tambien se puede agregar 
+	  mas en la carpeta
+	
+	- En todos los archivos de test se tiene  scanner s = new scanner(TestScanner.file("MyExample.java"));  
+	  Se puede cambiar MyExample.java por otro nombre y lo buscara directamente en la carpeta SamplePrograms. 
+
+	- Las partes 1 y 2 del proyecto ya estan terminadas.
+

@@ -1,0 +1,316 @@
+/*
+ * CUP specification for the parser for a simple demo language.
+ * Change this into the parser for your implementation of MiniJ.
+ */
+
+package Parser;
+
+import AST.*;
+import java.util.*;
+import java_cup.runtime.*;
+
+/* Code in the following section is included in the generated parser */
+
+parser code {:
+  /* Override default error message routine to handle line numbers correctly */
+  /* This routine is also called in the process of handling fatal errors. */
+
+  /** Report a non fatal error (or warning).  This method takes a message 
+   *  string and an additional object (to be used by specializations 
+   *  implemented in subclasses).  Prints the same simple error message
+   *  as the base class version, but correctly labels the line number.
+   *
+   * @param message an error message.
+   * @param info    an extra object reserved for use by specialized subclasses.
+   */
+  public void report_error(String message, Object info)
+    {
+      System.err.print(message);
+      System.err.flush();
+      if (info instanceof Symbol)
+	if (((Symbol)info).left != -1)
+	  System.err.println(" at line " + ((Symbol)info).left +
+			     " of input");
+	else System.err.println("");
+      else System.err.println("");
+    }
+:};  
+
+/* end of code included in generated parser
+
+
+/* Terminals (tokens returned by the scanner) */
+
+/* reserved words: */
+terminal DISPLAY, PUBLIC, CLASS, STATIC, VOID, MAIN, STRING, EXTENDS, RETURN, INT, IF, ELSE, WHILE, SYSTEMOUTPRINTLN, LENGTH, THIS, NEW;
+
+/* operators: */
+terminal PLUS, BECOMES, MINUS, TIMES, DIVIDE, AND, OR, DBECOMES, DISTINCT, LESS, MAJOR;
+
+/* delimiters: */
+terminal LPAREN, RPAREN, SEMICOLON, LBRACKET, RBRACKET, LKEY, RKEY, POINT, COMMA;
+
+/* tokens with values: */
+terminal String IDENTIFIER;
+
+terminal String LITERALINT;
+
+/* Nonterminals */
+nonterminal Statement Statement;
+nonterminal Assign AssignStatement;
+nonterminal Display DisplayStatement;
+nonterminal Exp Expression;
+nonterminal Identifier Identifier;
+nonterminal Program Goal;
+nonterminal ClassDeclList ClassDeclList;
+nonterminal ClassDecl ClassDeclaration;
+nonterminal MainClass MainClass;
+nonterminal StatementList StatementList;
+nonterminal ExpList ExpList;
+nonterminal Type Type;
+nonterminal VarDecl VarDeclaration;
+nonterminal VarDeclList VarDeclList;
+nonterminal MethodDecl MethodDeclaration;
+nonterminal MethodDeclList MethodDeclList;
+nonterminal Formal Formal;
+nonterminal FormalList FormalList;
+              
+/* Precedence declarations */
+
+precedence left PLUS, MINUS;
+precedence left TIMES, DIVIDE;
+precedence left AND, OR;
+precedence left LESS, MAJOR;
+precedence left DBECOMES, DISTINCT;
+
+/* Productions */
+Goal ::= MainClass:mc
+		{:RESULT = new ProgramMainClass(mc, mcleft);:}
+		|MainClass:mc ClassDeclList:cdl
+		{:RESULT = new ProgramComplete(mc, cdl, mcleft);:};
+			
+MainClass ::= PUBLIC CLASS Identifier:id1 LKEY PUBLIC STATIC VOID MAIN LPAREN STRING LBRACKET RBRACKET Identifier:id2 RPAREN LKEY StatementList:sl RKEY RKEY
+			 {:RESULT = new MainClassStatementList(id1,id2,sl,id1left);:}
+			 |PUBLIC CLASS Identifier:id1 LKEY PUBLIC STATIC VOID MAIN LPAREN STRING LBRACKET RBRACKET Identifier:id2 RPAREN LKEY RKEY RKEY 
+			 {:RESULT = new MainClassEmpty(id1,id2,id1left);:};
+			 
+StatementList ::= Statement:s 
+				 {:StatementList sl = new StatementList(sleft);
+                 sl.add(s);
+                 RESULT = sl;:}
+                 |StatementList:sl Statement:s
+          	     {:sl.add(s); 
+          	     RESULT = sl;:};
+		
+ClassDeclList ::= ClassDeclaration:cd 
+				 {:ClassDeclList cdl = new ClassDeclList(cdleft);
+               	 cdl.add(cd);
+                 RESULT = cdl; :}
+               	 |ClassDeclList:cdl ClassDeclaration:cd
+          	     {:cdl.add(cd); 
+          	     RESULT = cdl;:};
+
+ClassDeclaration ::= PUBLIC CLASS Identifier:id1 EXTENDS Identifier:id2 LKEY VarDeclList:vdl MethodDeclList:mdl RKEY               	
+				    {:RESULT = new ClassDeclExtends(id1,id2,vdl,mdl,id1left);:}
+					
+					|PUBLIC CLASS Identifier:id1 EXTENDS Identifier:id2 LKEY RKEY                 
+                    {:RESULT = new ClassDeclExtends(id1,id2,new VarDeclList(id1left),new MethodDeclList(id1left),id1left);:}
+
+                    |PUBLIC CLASS Identifier:id1 EXTENDS Identifier:id2 LKEY VarDeclList:vdl RKEY                 
+                    {:RESULT = new ClassDeclExtends(id1,id2,vdl,new MethodDeclList(id1left),id1left);:} 
+
+                    |PUBLIC CLASS Identifier:id1 EXTENDS Identifier:id2 LKEY MethodDeclList:mdl RKEY                 
+                    {:RESULT = new ClassDeclExtends(id1,id2,new VarDeclList(id1left),mdl,id1left);:}
+                    
+                    |PUBLIC CLASS Identifier:id1 LKEY VarDeclList:vdl MethodDeclList:mdl RKEY                
+                    {:RESULT = new ClassDeclSimple(id1,vdl,mdl,id1left);:}
+
+                    |PUBLIC CLASS Identifier:id1 LKEY VarDeclList:vdl RKEY                 
+                    {:RESULT = new ClassDeclSimple(id1,vdl,new MethodDeclList(id1left),id1left);:}
+
+                    |PUBLIC CLASS Identifier:id1 LKEY MethodDeclList:mdl RKEY                 
+                    {:RESULT = new ClassDeclSimple(id1,new VarDeclList(id1left),mdl,id1left);:}
+
+                    |PUBLIC CLASS Identifier:id1 LKEY RKEY                 
+                    {:RESULT = new ClassDeclSimple(id1,new VarDeclList(id1left),new MethodDeclList(id1left),id1left);:};                    
+
+Statement ::= LKEY StatementList:sl RKEY 
+			 {:RESULT = new Block(sl,slleft);:}			 
+			 
+			 |LKEY RKEY 
+			 {:RESULT = new BlockEmpty(0);:}/* El cero es inusual pero funciona */			
+			 
+			 |IF LPAREN Expression:e RPAREN Statement:s1 ELSE Statement:s2  
+			 {:RESULT = new If(e,s1,s2,eleft);:}			 
+			 
+			 |WHILE LPAREN Expression:e RPAREN Statement:s  
+			 {:RESULT = new While(e,s,eleft);:}			
+			
+			 |SYSTEMOUTPRINTLN LPAREN Expression:e RPAREN SEMICOLON  
+			 {:RESULT = new Print(e,eleft);:}			 
+			 
+			 |AssignStatement:s
+             {:RESULT = s;:}  
+             
+             |Identifier:id LBRACKET Expression:e1 RBRACKET BECOMES Expression:e2 SEMICOLON  
+			 {:RESULT = new ArrayAssign(id,e1,e2,idleft);:}          
+             
+             |DisplayStatement:s
+             {:RESULT = s;:};
+
+AssignStatement ::= Identifier:id BECOMES Expression:expr SEMICOLON
+                   {:RESULT = new Assign(id, expr, idleft);:};
+         
+Identifier ::= IDENTIFIER:id
+              {:RESULT = new Identifier(id, idleft);:};
+
+DisplayStatement ::= DISPLAY:d Expression:expr SEMICOLON
+                    {: RESULT = new Display(expr, dleft); :};
+
+Expression ::= Expression:arg1 AND Expression:arg2
+              {:RESULT = new And(arg1, arg2, arg1left);:} 
+              
+              |Expression:arg1 OR Expression:arg2
+              {:RESULT = new Or(arg1, arg2, arg1left);:}
+              
+              |Expression:arg1 DBECOMES Expression:arg2
+              {:RESULT = new Dbecomes(arg1, arg2, arg1left);:}
+              
+              |Expression:arg1 DISTINCT Expression:arg2
+              {:RESULT = new Distinct(arg1, arg2, arg1left);:}
+              
+              |Expression:arg1 LESS Expression:arg2
+              {:RESULT = new Less(arg1, arg2, arg1left);:}
+              
+              |Expression:arg1 MAJOR Expression:arg2
+              {:RESULT = new Major(arg1, arg2, arg1left);:}
+                 
+			  |Expression:arg1 PLUS Expression:arg2
+              {:RESULT = new Plus(arg1, arg2, arg1left);:}
+              
+              |Expression:arg1 MINUS Expression:arg2
+              {:RESULT = new Minus(arg1, arg2, arg1left);:} 
+              
+              |Expression:arg1 TIMES Expression:arg2
+              {:RESULT = new Times(arg1, arg2, arg1left);:} 
+              
+              |Expression:arg1 DIVIDE Expression:arg2
+              {:RESULT = new Divide(arg1, arg2, arg1left);:} 
+			  
+			  |Expression:arg1 LBRACKET Expression:arg2 RBRACKET
+              {:RESULT = new ArrayLookup(arg1, arg2, arg1left);:}
+			  
+			  |Expression:arg1 POINT LENGTH
+              {:RESULT = new ArrayLength(arg1, arg1left);:}
+			  |Expression:e1 POINT Identifier:id LPAREN Expression:e2 COMMA ExpList:el  RPAREN
+              {:RESULT = new Call(e1,id,e2,el,e1left);:}
+                            
+			  |Expression:e1 POINT Identifier:id LPAREN Expression:e2 RPAREN
+              {:RESULT = new CallSimple(e1,id,e2,e1left);:}
+			  
+			  |Expression:e1 POINT Identifier:id LPAREN RPAREN
+              {:RESULT = new CallMoreSimple(e1,id,e1left);:}
+			  
+			  |LITERALINT:li
+              {:RESULT = new IntegerLiteral(li.toString(), lileft);:}
+              
+              |IDENTIFIER:name
+              {: RESULT = new IdentifierExp(name, nameleft); :}
+              
+              |THIS:t
+              {: RESULT = new This(tleft);:}
+              
+              |NEW INT LBRACKET Expression:e RBRACKET
+              {: RESULT = new NewArray(e,eleft);:}
+			  
+			  |NEW Identifier:id LPAREN RPAREN
+              {: RESULT = new NewObject(id,idleft);:}
+			  			                
+              |LPAREN Expression:expr RPAREN
+              {:RESULT = expr;:};
+
+ExpList ::= Expression:e 
+		   {:ExpList el = new ExpList(eleft);
+           el.add(e);
+           RESULT = el; :}
+           |ExpList:el COMMA Expression:e 
+           {:el.add(e); 
+           RESULT = el;:};    
+               
+Type ::= INT LBRACKET RBRACKET
+		{:RESULT = new IntArrayType(0);:}/* Comprobar el cero */
+		
+		|INT
+		{:RESULT = new IntegerType(0);:}/* Comprobar el cero */
+        
+        |Identifier:id
+		{:RESULT = new IdentifierType(id.toString(),idleft);:};/* toString() necesario */
+		
+VarDeclaration ::= Type:t Identifier:i SEMICOLON
+		   	      {:RESULT = new VarDeclSimple(t,i,tleft);:} 
+		   
+		          |Type:t Identifier:i BECOMES Expression:e SEMICOLON
+		          {:RESULT = new VarDeclAssign(t,i,e,tleft);:};		
+		   
+VarDeclList ::= VarDeclaration:vd 
+			   {:VarDeclList vdl = new VarDeclList(vdleft);
+	           vdl.add(vd);
+	           RESULT = vdl; :}
+	           |VarDeclList:vdl VarDeclaration:vd
+	           {:vdl.add(vd); 
+	           RESULT = vdl;:};		   
+         			        
+MethodDeclaration ::= PUBLIC Formal:f1 LPAREN Formal:f2 COMMA FormalList:fl RPAREN LKEY VarDeclList:vdl StatementList:sl RETURN Expression:e SEMICOLON RKEY
+					 {:RESULT = new MethodDeclComplete(f1,f2,fl,vdl,sl,e,f1left);:}
+
+                     |PUBLIC Formal:f1 LPAREN Formal:f2 RPAREN LKEY VarDeclList:vdl StatementList:sl RETURN Expression:e SEMICOLON RKEY
+                     {:RESULT = new MethodDeclComplete(f1,f2,new FormalList(f1left),vdl,sl,e,f1left);:}         
+
+                     |PUBLIC Formal:f1 LPAREN RPAREN LKEY VarDeclList:vdl StatementList:sl RETURN Expression:e SEMICOLON RKEY
+                     {:RESULT = new MethodDeclSimple(f1,vdl,sl,e,f1left);:}
+
+                     |PUBLIC Formal:f1 LPAREN RPAREN LKEY StatementList:sl RETURN Expression:e SEMICOLON RKEY
+                     {:RESULT = new MethodDeclSimple(f1,new VarDeclList(f1left),sl,e,f1left);:}
+
+                     |PUBLIC Formal:f1 LPAREN RPAREN LKEY RETURN Expression:e SEMICOLON RKEY
+                     {:RESULT = new MethodDeclSimple(f1,new VarDeclList(f1left),new StatementList(f1left),e,f1left);:}
+           
+                     |PUBLIC Formal:f1 LPAREN RPAREN LKEY VarDeclList:vdl RETURN Expression:e SEMICOLON RKEY
+                     {:RESULT = new MethodDeclSimple(f1,vdl,new StatementList(f1left),e,f1left);:}
+
+                     |PUBLIC Formal:f1 LPAREN Formal:f2 RPAREN LKEY RETURN Expression:e SEMICOLON RKEY
+                     {:RESULT = new MethodDeclComplete(f1,f2,new FormalList(f1left),new VarDeclList(f1left),new StatementList(f1left),e,f1left);:} 
+
+                     |PUBLIC Formal:f1 LPAREN Formal:f2 RPAREN LKEY VarDeclList:vdl RETURN Expression:e SEMICOLON RKEY
+                     {:RESULT = new MethodDeclComplete(f1,f2,new FormalList(f1left),vdl,new StatementList(f1left),e,f1left);:}
+
+                     |PUBLIC Formal:f1 LPAREN Formal:f2 RPAREN LKEY StatementList:sl RETURN Expression:e SEMICOLON RKEY
+                     {:RESULT = new MethodDeclComplete(f1,f2,new FormalList(f1left),new VarDeclList(f1left),sl,e,f1left);:}
+
+                     |PUBLIC Formal:f1 LPAREN Formal:f2 COMMA FormalList:fl RPAREN LKEY RETURN Expression:e SEMICOLON RKEY
+                     {:RESULT = new MethodDeclComplete(f1,f2,fl,new VarDeclList(f1left),new StatementList(f1left),e,f1left);:}
+
+                     |PUBLIC Formal:f1 LPAREN Formal:f2 COMMA FormalList:fl RPAREN LKEY VarDeclList:vdl RETURN Expression:e SEMICOLON RKEY
+                     {:RESULT = new MethodDeclComplete(f1,f2,fl,vdl,new StatementList(f1left),e,f1left);:}
+
+                     |PUBLIC Formal:f1 LPAREN Formal:f2 COMMA FormalList:fl RPAREN LKEY StatementList:sl RETURN Expression:e SEMICOLON RKEY
+                     {:RESULT = new MethodDeclComplete(f1,f2,fl,new VarDeclList(f1left),sl,e,f1left);:};
+
+MethodDeclList ::= MethodDeclaration:md 
+				  {:MethodDeclList mdl = new MethodDeclList(mdleft);
+		          mdl.add(md);
+		          RESULT = mdl; :}
+		          |MethodDeclList:mdl MethodDeclaration:md
+		          {:mdl.add(md); 
+		          RESULT = mdl;:};	  
+
+Formal ::= Type:t Identifier:i
+          {:RESULT = new Formal(t, i, tleft);:};
+		          
+FormalList ::= Formal:f 
+		      {:FormalList fl = new FormalList(fleft);
+		      fl.add(f);
+		      RESULT = fl; :}
+		      |FormalList:fl COMMA Formal:f
+		      {:fl.add(f); 
+		      RESULT = fl;:};	 		                   
