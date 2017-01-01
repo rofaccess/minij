@@ -6,6 +6,8 @@ public class Factorial{
 
 public class Test{
 	public int getValue(){		
+		//int a;
+		//a = 10;
 		int a = 10;
 		return a;
 	}

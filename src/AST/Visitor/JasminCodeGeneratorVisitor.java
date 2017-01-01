@@ -35,7 +35,7 @@ public class JasminCodeGeneratorVisitor implements Visitor {
 	}
 	
 	private void addCode(String code){
-		System.out.print(code);
+		//System.out.print(code);
 		jasminCode = jasminCode + code;
 	}
 
@@ -95,8 +95,7 @@ public class JasminCodeGeneratorVisitor implements Visitor {
 			//System.out.println();
 		}
 		addCode("\n  return");
-		addCode("\n.end method");
-		addCode("\n;end class "+n.i1);		
+		addCode("\n.end method");		
 	}
 
 	//Identifier i1,i2;
@@ -113,7 +112,6 @@ public class JasminCodeGeneratorVisitor implements Visitor {
 		addCode("\n  return");
 		
 		addCode("\n.end method");
-		addCode("\n;end class "+n.i1);
 	}
 
 
@@ -126,6 +124,9 @@ public class JasminCodeGeneratorVisitor implements Visitor {
 		addCode("\n.class public " + n.i);
 		addCode("\n.super java/lang/Object");
 		
+		//Declaración explicita del constructor de la clase		
+		addCode(classConstructor());
+		
 		for ( int i = 0; i < n.vl.size(); i++ ) {
 			//System.out.print("  ");
 			n.vl.get(i).accept(this);
@@ -136,8 +137,7 @@ public class JasminCodeGeneratorVisitor implements Visitor {
 		for ( int i = 0; i < n.ml.size(); i++ ) {
 			//System.out.println();
 			n.ml.get(i).accept(this);
-		}
-		addCode("\n;end class "+n.i);		
+		}	
 	}
 
 	//Identifier i;
@@ -151,6 +151,9 @@ public class JasminCodeGeneratorVisitor implements Visitor {
 		n.j.accept(this);
 		addCode("\n.super " + n.j);
 		
+		//Declaración explicita del constructor de la clase
+		addCode(classConstructor());
+		
 		for ( int i = 0; i < n.vl.size(); i++ ) {
 			//System.out.print("  ");
 			n.vl.get(i).accept(this);
@@ -162,7 +165,6 @@ public class JasminCodeGeneratorVisitor implements Visitor {
 			//System.out.println();
 			n.ml.get(i).accept(this);
 		}
-		addCode("\n;end class "+n.i);
 	}
 
 	//
@@ -253,10 +255,10 @@ public class JasminCodeGeneratorVisitor implements Visitor {
 	//Exp e;
 	public void visit(Print n) {		
 		n.e.accept(this);
-		//addCode("\n  iload 0");//Asume que la exp e se evaluó y se guardó con "istore 0" 
+		
 		addCode("\n  getstatic java/lang/System/out Ljava/io/PrintStream;");
-		addCode("\n  swap");
-		addCode("\n  invokevirtual java/io/PrintStream/println(I)V");
+		addCode("\n  iload 0");
+		addCode("\n  invokevirtual java/io/PrintStream/println("+currentType(currentType)+")V");
 	}
 
 	//Identifier i;
@@ -385,9 +387,11 @@ public class JasminCodeGeneratorVisitor implements Visitor {
 		
 		if(n.e1 instanceof NewObject){
 			NewObject newObject = (NewObject) n.e1;
-			String tipoRetorno = symbolTree.getClass(newObject.i.s).getMethod(n.i.s).getType();
+			String returnType = symbolTree.getClass(newObject.i.s).getMethod(n.i.s).getType();
+			currentType = returnType;
 			//invokevirtual Clase/Metodo()TipoRetorno
-			addCode("\n  invokevirtual "+ newObject.i + "/" + n.i + "()"+currentType);
+			addCode("\n  invokevirtual "+ newObject.i + "/" + n.i + "()"+currentType(returnType));
+			addCode("\n  istore 0");
 		}		
 		
 	}
@@ -395,12 +399,13 @@ public class JasminCodeGeneratorVisitor implements Visitor {
 	//int i;
 	public void visit(IntegerLiteral n) {
 		addCode("\n  ldc " + n.i);
-		//addCode("\n  istore 0");
+		addCode("\n  istore 0");
 	}
 
 
 	//String s;
 	public void visit(IdentifierExp n) {
+		//addCode("\n  ldc " + n.s);
 		//System.out.print(n.s);
 	}
 
@@ -479,6 +484,8 @@ public class JasminCodeGeneratorVisitor implements Visitor {
 	public void visit(MethodDeclComplete n) {		
 		n.f1.accept(this);
 		addCode("\n\n.method public " + n.f1.i + "()" + currentType);
+		addCode("\n  .limit stack 5");
+		addCode("\n  .limit locals 100");	
 		
 		n.f2.accept(this);			
 		for ( int i = 0; i < n.fl.size(); i++ ) {
@@ -504,7 +511,7 @@ public class JasminCodeGeneratorVisitor implements Visitor {
 			}
 		}
 		n.e.accept(this);
-		addCode("\n  iload0");  //Agrega el resultado de n.e al stack
+		addCode("\n  iload 0");  //Agrega el resultado de n.e al stack
 		addCode("\n  ireturn"); //Retorna lo agregado al stack?	
 		addCode("\n.end method");					
 	}
@@ -516,6 +523,8 @@ public class JasminCodeGeneratorVisitor implements Visitor {
 	public void visit(MethodDeclSimple n) {		
 		n.f1.accept(this);
 		addCode("\n\n.method public " + n.f1.i + "()"+currentType);
+		addCode("\n  .limit stack 5");
+		addCode("\n  .limit locals 100");	
 				
 		for ( int i = 0; i < n.vl.size(); i++ ) {
 			//System.out.print("    ");
@@ -531,9 +540,30 @@ public class JasminCodeGeneratorVisitor implements Visitor {
 		}
 		
 		n.e.accept(this);
-		addCode("\n  iload0");  //Agrega el resultado de n.e al stack
+		addCode("\n  iload 0");  //Agrega el resultado de n.e al stack
 		addCode("\n  ireturn"); //Retorna lo agregado al stack?	
 		addCode("\n.end method");			
 
+	}
+	
+	/* Retorna una cadena que contiene una declaración del constructor de una clase  */
+	public String classConstructor(){
+		String classConstructor = new String();
+		
+		classConstructor += "\n\n.method public <init>()V";
+		classConstructor += "\n  aload_0";
+		classConstructor += "\n  invokenonvirtual java/lang/Object/<init>()V";
+		classConstructor += "\n  return";
+		classConstructor += "\n.end method";
+		
+		return classConstructor;
+	}
+	
+	public String currentType(String type){		
+		String currentType = new String();
+		if(type == "int"){
+			currentType = "I";
+		}
+		return currentType;
 	}
 }

@@ -30,7 +30,8 @@ public class SymbolTree {
 	}
 				
 	//Imprime el arbol de categorias
-	public void printSymbolTree(){		
+	public void printSymbolTree(){	
+		System.out.println("\n#####  Symbol Tree #####");
 		System.out.print("\nLine\tIdentifier\tScope\t\tCategory\tType\t\tValue\t\tReturn\n");
 		
 		Iterator<String> it = clases.keySet().iterator();

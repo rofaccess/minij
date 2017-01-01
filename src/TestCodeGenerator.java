@@ -32,8 +32,8 @@ public class TestCodeGenerator {
 	        JasminCodeGeneratorVisitor jcgv = new JasminCodeGeneratorVisitor(st);
 	        program.accept(jcgv);
 	        
-	        System.out.println();
-	        //System.out.println(jcgv.getJasminCode());
+	        System.out.println("### Jasmin Code Generated ###\n");
+	        System.out.println(jcgv.getJasminCode());
 	        
 	        st.printSymbolTree();
 	        
