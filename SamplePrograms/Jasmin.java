@@ -5,11 +5,14 @@ public class Factorial{
 }
 
 public class Test{
-	public int getValue(){		
-		//int a;
-		//a = 10;
-		int a = 10;
-		return a;
+	public int getValue(){			
+		int res;
+		if(1 < 0){
+			res = 2;
+		}else{
+			res = 3;
+		}
+		return res;
 	}
 }
 

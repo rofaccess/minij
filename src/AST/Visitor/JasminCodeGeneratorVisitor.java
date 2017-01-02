@@ -11,6 +11,8 @@ public class JasminCodeGeneratorVisitor implements Visitor {
 	private String jasminCodeFileName;
 	private String currentClass;
 	private String currentType;
+	private int label;
+	private String indent;
 
 	//Constructor
 	public JasminCodeGeneratorVisitor(SymbolTree st){
@@ -19,6 +21,8 @@ public class JasminCodeGeneratorVisitor implements Visitor {
 		jasminCode = new String();
 		currentClass = "NULL_CLASS";
 		currentType = "NULL_TYPE";
+		label = 0;
+		indent = "\n  ";
 	}
 
 	//
@@ -190,6 +194,8 @@ public class JasminCodeGeneratorVisitor implements Visitor {
 		//System.out.print(" = ");
 		n.e.accept(this);
 		//System.out.print(";");
+		
+		addCode(indent + "istore 0");
 	}
 
 	//
@@ -232,15 +238,26 @@ public class JasminCodeGeneratorVisitor implements Visitor {
 
 	//Exp e;
 	//Statement s1,s2;
-	public void visit(If n) {
+	public void visit(If n) {		
 		//System.out.print("if (");
-		n.e.accept(this);
+		n.e.accept(this);		
 		//System.out.println(") ");
 		//System.out.print("    ");
+		int ifLabel = label;
+		int elseLabel = ifLabel + 1;
+		int endLabel = elseLabel +1;
+		
+		addCode("\n  goto Label"+elseLabel);
+		addCode("\n  Label"+ifLabel+":");
+		indent = "\n    ";
 		n.s1.accept(this);
+		addCode(indent + "goto Label"+endLabel);
 		//System.out.println();
-		//System.out.print("    else ");
+		//System.out.print("    else ");		
+		addCode("\n  Label"+elseLabel+":");		
 		n.s2.accept(this);
+		indent = "\n  ";
+		addCode("\n  Label"+(endLabel)+":");
 	}
 
 	//Exp e;
@@ -256,9 +273,9 @@ public class JasminCodeGeneratorVisitor implements Visitor {
 	public void visit(Print n) {		
 		n.e.accept(this);
 		
-		addCode("\n  getstatic java/lang/System/out Ljava/io/PrintStream;");
-		addCode("\n  iload 0");
-		addCode("\n  invokevirtual java/io/PrintStream/println("+currentType(currentType)+")V");
+		addCode(indent + "getstatic java/lang/System/out Ljava/io/PrintStream;");
+		addCode(indent + "iload 0");
+		addCode(indent + "invokevirtual java/io/PrintStream/println("+currentType(currentType)+")V");
 	}
 
 	//Identifier i;
@@ -267,7 +284,9 @@ public class JasminCodeGeneratorVisitor implements Visitor {
 		n.i.accept(this);
 		//System.out.print(" = ");
 		n.e.accept(this);
-		//System.out.print(";");
+		//System.out.print(";");	
+		
+		addCode(indent + "istore 0");
 	}
 
 	//Identifier i;
@@ -288,6 +307,8 @@ public class JasminCodeGeneratorVisitor implements Visitor {
 		//System.out.print(" && ");
 		n.e2.accept(this);
 		//System.out.print(")");
+		
+		addCode(indent + "iand");
 	}
 
 	//Exp e1,e2;
@@ -297,6 +318,10 @@ public class JasminCodeGeneratorVisitor implements Visitor {
 		//System.out.print(" < ");
 		n.e2.accept(this);
 		//System.out.print(")");
+		
+		addCode("\n  isub");
+		label += 1;
+		addCode("\n  iflt Label"+label);
 	}
 
 	//Exp e1,e2;
@@ -306,15 +331,21 @@ public class JasminCodeGeneratorVisitor implements Visitor {
 		//System.out.print(" > ");
 		n.e2.accept(this);
 		//System.out.print(")");
+		
+		addCode("\n  isub");
+		label += 1;
+		addCode("\n  ifgt Label"+label);
 	}
 
 	//Exp e1,e2;
 	public void visit(Plus n) {
 		//System.out.print("(");
-		n.e1.accept(this);
-		//System.out.print(" + ");
+		n.e1.accept(this);		
+		//System.out.print(" + ");		
 		n.e2.accept(this);
-		//System.out.print(")");
+		//System.out.print(")");		
+		
+		addCode(indent + "iadd");
 	}
 
 	//Exp e1,e2;
@@ -324,6 +355,8 @@ public class JasminCodeGeneratorVisitor implements Visitor {
 		//System.out.print(" - ");
 		n.e2.accept(this);
 		//System.out.print(")");
+		
+		addCode(indent + "isub");
 	}
 
 	//Exp e1,e2;
@@ -333,6 +366,8 @@ public class JasminCodeGeneratorVisitor implements Visitor {
 		//System.out.print(" * ");
 		n.e2.accept(this);
 		//System.out.print(")");
+		
+		addCode(indent + "imul");
 	}
 
 	//Exp e1,e2;
@@ -364,7 +399,7 @@ public class JasminCodeGeneratorVisitor implements Visitor {
 			}
 		}
 		
-		addCode("\n  invokevirtual "+ n.e1.show() + "/" + n.i + "()I");
+		addCode(indent + "invokevirtual "+ n.e1.show() + "/" + n.i + "()I");
 	}
 
 	//Exp e1;
@@ -376,7 +411,7 @@ public class JasminCodeGeneratorVisitor implements Visitor {
 		n.e2.accept(this);			
 		
 		//new Fac().ComputeFac(10)   -> exp1.id(exp2)
-		addCode("\n  invokevirtual "+ n.e1.show() + "/" + n.i + "()I");
+		addCode(indent + "invokevirtual "+ n.e1.show() + "/" + n.i + "()I");
 	}
 
 	//Exp e1;
@@ -390,16 +425,14 @@ public class JasminCodeGeneratorVisitor implements Visitor {
 			String returnType = symbolTree.getClass(newObject.i.s).getMethod(n.i.s).getType();
 			currentType = returnType;
 			//invokevirtual Clase/Metodo()TipoRetorno
-			addCode("\n  invokevirtual "+ newObject.i + "/" + n.i + "()"+currentType(returnType));
-			addCode("\n  istore 0");
-		}		
-		
+			addCode(indent + "invokevirtual "+ newObject.i + "/" + n.i + "()"+currentType(returnType));
+			addCode(indent + "istore 0");
+		}			
 	}
 
 	//int i;
 	public void visit(IntegerLiteral n) {
-		addCode("\n  ldc " + n.i);
-		addCode("\n  istore 0");
+		addCode(indent + "ldc " + n.i);		
 	}
 
 
@@ -422,10 +455,10 @@ public class JasminCodeGeneratorVisitor implements Visitor {
 
 	//Identifier i;
 	public void visit(NewObject n) {
-		addCode("\n  new "+n.i);
-		addCode("\n  dup");
-		addCode("\n  invokenonvirtual " + n.i + "/<init>()V");
-		currentClass = n.i.s;
+		addCode(indent + "new "+n.i);
+		addCode(indent + "dup");
+		addCode(indent + "invokenonvirtual " + n.i + "/<init>()V");
+		currentClass = n.i.s;		
 	}
 
 	//String s;
@@ -463,7 +496,9 @@ public class JasminCodeGeneratorVisitor implements Visitor {
 		n.e1.accept(this);
 		//System.out.print(" || ");
 		n.e2.accept(this);
-		//System.out.print(")");		
+		//System.out.print(")");
+		
+		addCode(indent + "ior");
 	}
 
 	//Exp e1,e2;	
@@ -472,7 +507,9 @@ public class JasminCodeGeneratorVisitor implements Visitor {
 		n.e1.accept(this);
 		//System.out.print(" / ");
 		n.e2.accept(this);
-		//System.out.print(")");		
+		//System.out.print(")");	
+		
+		addCode(indent + "idiv");
 	}
 
 	//Formal f1

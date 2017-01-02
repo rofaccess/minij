@@ -11,8 +11,19 @@
 .method public getValue()I
   .limit stack 5
   .limit locals 100
-  ldc 10
-  istore 0
+  ldc 1
+  ldc 0
+  isub
+  ifgt Label1
+  goto Label2
+  Label1:
+    ldc 2
+    istore 0
+    goto Label3
+  Label2:
+    ldc 3
+    istore 0
+  Label3:
   iload 0
   ireturn
 .end method
