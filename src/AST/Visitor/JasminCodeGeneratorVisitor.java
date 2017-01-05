@@ -1,5 +1,7 @@
 package AST.Visitor;
 
+import java.util.ArrayList;
+
 import AST.*;
 import SymbolTree.*;
 import SymbolTree.Class;
@@ -7,8 +9,9 @@ import SymbolTree.Class;
 public class JasminCodeGeneratorVisitor implements Visitor {
 	private SymbolTree symbolTree;
 	private Category currentScope;
+	private ArrayList<String> jasminCodes;
 	private String jasminCode;
-	private String jasminCodeFileName;
+	private ArrayList<String> jasminCodeFileNames;
 	private String currentClass;
 	private String currentType;
 	private int label;
@@ -19,6 +22,8 @@ public class JasminCodeGeneratorVisitor implements Visitor {
 		symbolTree = st;
 		currentScope = null;
 		jasminCode = new String();
+		jasminCodes = new ArrayList<String>();
+		jasminCodeFileNames = new ArrayList<String>();
 		currentClass = "NULL_CLASS";
 		currentType = "NULL_TYPE";
 		label = 0;
@@ -30,12 +35,16 @@ public class JasminCodeGeneratorVisitor implements Visitor {
 		return symbolTree;
 	}
 
+	public ArrayList<String> getJasminCodes(){
+		return jasminCodes;
+	}
+	
 	public String getJasminCode(){
 		return jasminCode;
 	}
 
-	public String getJasminCodeFileName(){
-		return jasminCodeFileName;
+	public ArrayList<String> getJasminCodeFileNames(){
+		return jasminCodeFileNames;
 	}
 	
 	private void addCode(String code){
@@ -85,7 +94,7 @@ public class JasminCodeGeneratorVisitor implements Visitor {
 	//StatementList sl;
 	public void visit(MainClassStatementList n) {	
 		n.i1.accept(this);		
-		jasminCodeFileName = n.i1.s;
+		jasminCodeFileNames.add(n.i1.s);
 		addCode(".source " + n.i1 + ".j");
 		addCode("\n.class public " + n.i1);
 		addCode("\n.super java/lang/Object");
@@ -99,23 +108,28 @@ public class JasminCodeGeneratorVisitor implements Visitor {
 			//System.out.println();
 		}
 		addCode("\n  return");
-		addCode("\n.end method");		
+		addCode("\n.end method");
+		
+		jasminCodes.add(jasminCode);
+		jasminCode = new String();
 	}
 
 	//Identifier i1,i2;
 	public void visit(MainClassEmpty n) {		
 		n.i1.accept(this);
-		jasminCodeFileName = n.i1.s;
-		addCode("\n\n.source " + n.i1 + ".j");
+		jasminCodeFileNames.add(n.i1.s);
+		
+		addCode(".source " + n.i1 + ".j");
 		addCode("\n.class public " + n.i1);
 		addCode("\n.super java/lang/Object");			
 		
 		n.i2.accept(this);	
-		addCode("\n\n.method public static main([Ljava/lang/String;)V");
-		
-		addCode("\n  return");
-		
+		addCode("\n\n.method public static main([Ljava/lang/String;)V");		
+		addCode("\n  return");		
 		addCode("\n.end method");
+		
+		jasminCodes.add(jasminCode);
+		jasminCode = new String();
 	}
 
 
@@ -124,7 +138,9 @@ public class JasminCodeGeneratorVisitor implements Visitor {
 	//MethodDeclList ml;
 	public void visit(ClassDeclSimple n) {		
 		n.i.accept(this);
-		addCode("\n\n.source " + n.i + ".j");
+		jasminCodeFileNames.add(n.i.s);
+		
+		addCode(".source " + n.i + ".j");
 		addCode("\n.class public " + n.i);
 		addCode("\n.super java/lang/Object");
 		
@@ -141,7 +157,10 @@ public class JasminCodeGeneratorVisitor implements Visitor {
 		for ( int i = 0; i < n.ml.size(); i++ ) {
 			//System.out.println();
 			n.ml.get(i).accept(this);
-		}	
+		}
+		
+		jasminCodes.add(jasminCode);
+		jasminCode = new String();
 	}
 
 	//Identifier i;
@@ -150,7 +169,7 @@ public class JasminCodeGeneratorVisitor implements Visitor {
 	//MethodDeclList ml;
 	public void visit(ClassDeclExtends n) {		
 		n.i.accept(this);
-		addCode("\n\n.source " + n.i + ".j");
+		addCode(".source " + n.i + ".j");
 		addCode("\n.class public " + n.i);		
 		n.j.accept(this);
 		addCode("\n.super " + n.j);
@@ -169,6 +188,9 @@ public class JasminCodeGeneratorVisitor implements Visitor {
 			//System.out.println();
 			n.ml.get(i).accept(this);
 		}
+		
+		jasminCodes.add(jasminCode);
+		jasminCode = new String();
 	}
 
 	//

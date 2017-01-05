@@ -14,7 +14,7 @@
   ldc 1
   ldc 0
   isub
-  ifgt Label1
+  iflt Label1
   goto Label2
   Label1:
     ldc 2

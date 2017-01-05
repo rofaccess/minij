@@ -1,3 +1,12 @@
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.util.ArrayList;
+
 import java_cup.runtime.Symbol;
 import AST.Program;
 import AST.Visitor.JasminCodeGeneratorVisitor;
@@ -24,20 +33,23 @@ public class TestCodeGenerator {
 			program.accept(stv);			
 			
 			SymbolTree st=stv.getSymbolTree();	      
-	       	
+			st.printSymbolTree();
+			
 	        SemanticAnalyzerWithSymbolTreeVisitor sav = new SemanticAnalyzerWithSymbolTreeVisitor(st);
 	        program.accept(sav);
 	        
 	        System.out.println();
 	        JasminCodeGeneratorVisitor jcgv = new JasminCodeGeneratorVisitor(st);
 	        program.accept(jcgv);
-	        
+	        /*  */		
 	        System.out.println("### Jasmin Code Generated ###\n");
-	        System.out.println(jcgv.getJasminCode());
 	        
-	        st.printSymbolTree();
+	        ArrayList<String> jasminFileNames = jcgv.getJasminCodeFileNames();	       
+	        ArrayList<String> jasminCodes = jcgv.getJasminCodes();
+			for (int i = 0; i < jasminFileNames.size(); i++) {				
+				TestCodeGenerator.createFile(jasminFileNames.get(i),jasminCodes.get(i));			
+			}       
 	        
-			System.out.print("\n");
 			System.out.print("\nTest Code Generator Completed"); 
 		} catch (Exception e) {
 			// yuck: some kind of error in the compiler implementation
@@ -48,4 +60,46 @@ public class TestCodeGenerator {
 			e.printStackTrace();
 		}
 	}
+	
+	/* 
+	   ** Este método permite escribir un archivo de la carpeta GeneratedCode
+	   */
+	   public static void createFile(String fileName, String text) throws IOException{
+		   	String pathAux = "src/TestScanner.java";
+		   	File f = new File(pathAux);
+	   		String absolutePath = f.getAbsolutePath();
+	    	String filePath= absolutePath.replaceAll(pathAux, "GeneratedCode/"+fileName+".j");
+	    	
+	    	BufferedWriter bw = null;
+			FileWriter fw = null;
+
+			try {
+				fw = new FileWriter(filePath);
+				bw = new BufferedWriter(fw);
+				bw.write(text);
+
+			} catch (IOException e) {
+
+				e.printStackTrace();
+
+			} finally {
+
+				try {
+
+					if (bw != null)
+						bw.close();
+
+					if (fw != null)
+						fw.close();
+
+				} catch (IOException ex) {
+
+					ex.printStackTrace();
+
+				}
+
+			}    	
+
+	    	System.out.println("Generated Jasmin Code File: "+filePath+"\n");
+	   }
 }
